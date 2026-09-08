@@ -176,16 +176,40 @@ def check_publora(report: Report, offline: bool) -> None:
     if offline or not key:
         return
 
+    # GET /platform-connections is the documented way to verify a key: it
+    # lists the workspace's connected channels, so the same call also proves
+    # LINKEDIN_PLATFORM_ID names a real channel. (Publora's "test-connection"
+    # is a per-platform bot check, not an API-key check.) Schema, from
+    # publora/publora-api-docs schema/openapi.yaml:
+    #   200 -> {"success": bool, "connections": [{"platformId": "linkedin-...",
+    #           "username": "@handle", "displayName": "...", ...}]}
+    #   401 -> {"error": "Invalid API key", "code": "..."}
     try:
         import requests
 
         r = requests.get(
-            "https://api.publora.com/api/v1/test-connection",
+            "https://api.publora.com/api/v1/platform-connections",
             headers={"x-publora-key": key},
             timeout=30,
         )
         if r.status_code == 200:
-            report.add(OK, "  live check", "key accepted")
+            payload = r.json() if r.content else {}
+            connections = payload.get("connections") or [] if isinstance(payload, dict) else []
+            ids = [c.get("platformId", "") for c in connections if isinstance(c, dict)]
+            linkedin = [c for c in connections if isinstance(c, dict) and str(c.get("platformId", "")).startswith("linkedin-")]
+            report.add(OK, "  live check", f"key accepted; {len(connections)} connected channel(s), {len(linkedin)} LinkedIn")
+
+            if not platform_id:
+                pass  # already reported as BAD above
+            elif platform_id in ids:
+                match = next(c for c in connections if c.get("platformId") == platform_id)
+                who = match.get("displayName") or match.get("username") or "(unnamed)"
+                report.add(OK, "  platform id match", f"names a connected channel: {who}")
+            elif not linkedin:
+                report.add(BAD, "  platform id match", "no LinkedIn channel is connected in this Publora workspace. Channels > Add Channel > LinkedIn")
+            else:
+                names = ", ".join(str(c.get("displayName") or c.get("username") or "?") for c in linkedin)
+                report.add(BAD, "  platform id match", f"LINKEDIN_PLATFORM_ID does not match any connected channel. Connected LinkedIn channel(s): {names}. Copy the id from Channels > your account")
         elif r.status_code in (401, 403):
             report.add(BAD, "  live check", f"HTTP {r.status_code}: key rejected. Settings > API > Create Key")
         else:
