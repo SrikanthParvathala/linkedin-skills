@@ -86,6 +86,11 @@ git clone https://github.com/sergebulaev/linkedin-skills.git
 cd linkedin-skills
 ```
 
+The clone ships a `.claude/skills/` directory that symlinks all 11 skills, so
+Claude Code auto-discovers them the moment the repo is your working directory.
+No plugin install needed. Use this path wherever `/plugin` is unavailable, such
+as Claude Code on the web.
+
 ### Hermes Agent
 
 Hermes Agent (Nous Research) follows the agentskills.io open standard and loads `skills/*/SKILL.md` directly. Clone the bundle into your Hermes skills folder:
@@ -276,6 +281,7 @@ Every skill follows these rules automatically:
 ```
 linkedin-skills/
 ├── skills/          ← SKILL.md frontmatter; native to Claude Code and Codex, others read as markdown
+├── .claude/skills/  ← symlinks into skills/, so Claude Code auto-discovers the bundle from a plain clone
 ├── .codex-marketplace/ ← generated nested Codex package (run scripts/sync_codex_marketplace.py)
 ├── lib/             ← pure Python, works in any agent runtime
 ├── references/      ← pure markdown, works anywhere
@@ -284,7 +290,7 @@ linkedin-skills/
 
 | Runtime | Auto-discovers skills? | Setup |
 |---|---|---|
-| **Claude Code** (CLI, Desktop, Web, IDE) | Yes | Install via plugin or clone. Skills activate on matching prompts. |
+| **Claude Code** (CLI, Desktop, Web, IDE) | Yes | Install via plugin, or clone and open as the working directory (`.claude/skills/` makes the bundle discoverable without a plugin install). Skills activate on matching prompts. |
 | **Codex CLI** | Yes | Install via `codex plugin marketplace add sergebulaev/linkedin-skills` and `codex plugin add linkedin-skills@linkedin-skills`. |
 | **Anthropic Managed Agents** (`/v1/agents`) | Yes | Pass skill files in the agent context. |
 | **OpenClaw** | Manual | Mount the repo, add system prompt pointing to `skills/*/SKILL.md`. |
