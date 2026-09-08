@@ -151,6 +151,7 @@ wc -l SKILL.md skills/*/SKILL.md
 ls skills/ | wc -l        # must equal 11
 ls .claude/skills | wc -l # must equal 11
 for l in .claude/skills/*; do [ -e "$l" ] || echo "BROKEN SYMLINK: $l"; done
+python3 scripts/check_config.py --offline   # credential wiring; 0 when nothing is misconfigured
 grep -nE '^description:' skills/*/SKILL.md SKILL.md | grep -E '—|–'   # must be empty
 ```
 

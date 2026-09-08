@@ -230,7 +230,19 @@ Then open `.env` and replace the placeholders with your real values.
 pip install requests python-dotenv
 ```
 
-**Step 7.** Test it. Ask Claude Code or Codex:
+**Step 7.** Check the wiring:
+
+```bash
+python3 scripts/check_config.py
+```
+
+It reports each layer as configured, misconfigured, or simply not set up, and
+never prints a secret (credentials show as prefix plus length). Add `--offline`
+to skip the live API calls. The two silent failures it exists to catch: a `.env`
+that is never read because `python-dotenv` is missing, and a `PUBLORA_API_KEY`
+set without `LINKEDIN_PLATFORM_ID`, which quietly leaves you in draft-only mode.
+
+**Step 8.** Test it end to end. Ask Claude Code or Codex:
 
 > "Schedule a test LinkedIn post via Publora 24 hours from now: 'testing the API connection — will cancel in dashboard'."
 
@@ -257,8 +269,14 @@ Every skill follows these rules automatically:
 
 ## Troubleshooting
 
+Run `python3 scripts/check_config.py` first: it identifies most of the problems
+below by name, without printing your credentials.
+
 | Problem | Fix |
 |---|---|
+| I set up `.env` but nothing uses it | `python-dotenv` is not installed, so `.env` is silently ignored. `pip install python-dotenv`, or export the variables in your shell instead. |
+| Still draft-only despite a valid Publora key | Publishing needs `PUBLORA_API_KEY` **and** `LINKEDIN_PLATFORM_ID`. With only one set, the manual backend is selected with no warning. |
+| Skills keep asking me to paste post text | `APIFY_TOKEN` is unset, expired, or typo'd. Auth failures collapse into the same paste-fallback path as no token, so a wrong token looks exactly like none. |
 | Skills don't activate when I ask about LinkedIn | Make sure you installed via the Skills panel, `/plugin install`, or `codex plugin add`. Try starting a new conversation. |
 | "Publora API key not provided" | Your `.env` file is missing or in the wrong folder. It should be in the `linkedin-skills/` root. |
 | "401 Unauthorized" from Publora | Your API key expired. Go to Publora Settings > API > Create a new key. |
